@@ -6,6 +6,7 @@ from pynput.keyboard import Controller
 from pynput.mouse import Listener
 import threading
 import time
+import math
 
 
 def find_frame_center(frame):
@@ -13,6 +14,11 @@ def find_frame_center(frame):
     center_x = width // 2
     center_y = height // 2
     return center_x, center_y
+
+def calculate_distance(x1, y1, x2, y2):
+    
+    distance = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    return distance
 
 # Initialize YOLO model
 model = YOLO("yolov8n.pt")
@@ -45,6 +51,8 @@ mouse_listener_thread = threading.Thread(target=start_mouse_listener)
 mouse_listener_thread.daemon = True  # Make sure this thread exits when the main program exits
 mouse_listener_thread.start()
 
+min_distance = 1000000
+
 # Example usage of record_window_stream, which records the video stream from the desired on-screen window and returns the frames and FPS
 for frame, fps in record_window_stream("RESIDENT EVIL 2"):
     # Process the frame and FPS as needed
@@ -72,6 +80,10 @@ for frame, fps in record_window_stream("RESIDENT EVIL 2"):
     # Extract bounding boxes and iterate through them
     boxes = results[0].boxes.xyxy.tolist()
 
+    centers_list = []
+    
+    global min_distance_coords
+
     for box in boxes:
       
         x1, y1, x2, y2 = map(int, box)
@@ -89,6 +101,16 @@ for frame, fps in record_window_stream("RESIDENT EVIL 2"):
 
         # Draw a circle at the center of each detected box
         cv2.circle(frame, (center_x, center_y), radius, color, -1)  # -1 to fill the circle
+
+        centers_list.append((center_x, center_y))
+        
+    for i in range(len(centers_list)-1):
+        x1, y1 = centers_list[i]
+        x2, y2 = find_frame_center(frame)
+        distance = calculate_distance(x1, y1, x2, y2)
+        if(distance < min_distance):
+            min_distance = distance
+            min_distance_coords = (x1, y1)
         
 
     # Check for left click and simulate pressing 'H'
@@ -103,6 +125,7 @@ for frame, fps in record_window_stream("RESIDENT EVIL 2"):
     cv2.circle(frame, find_frame_center(frame), 5, (255,0,0), -1)  # -1 to fill the circle
     cv2.imshow('Frame', frame)
     print(find_frame_center(frame))
+    print("min dist:",min_distance)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
