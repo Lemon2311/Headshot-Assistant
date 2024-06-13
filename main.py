@@ -1,7 +1,11 @@
 import torch
 import cv2
 from ultralytics import YOLO
-from zest import capture_and_display, record_window_stream
+from zest import record_window_stream
+from pynput.keyboard import Controller
+from pynput.mouse import Listener
+import threading
+import time
 
 # Initialize YOLO model
 model = YOLO("yolov8n.pt")
@@ -9,6 +13,29 @@ model = YOLO("yolov8n.pt")
 # Check if CUDA is available and if so, use it
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model.to(device)
+
+# Initialize the keyboard controller
+keyboard = Controller()
+
+# Flag to check if left click is pressed
+left_click_pressed = False
+
+# Mouse callback function for pynput
+def on_click(x, y, button, pressed):
+    global left_click_pressed
+    if button == button.left and pressed:
+        left_click_pressed = True
+        print("Left click detected")  # Debug message to confirm the left click
+
+# Function to start the mouse listener in a separate thread
+def start_mouse_listener():
+    with Listener(on_click=on_click) as listener:
+        listener.join()
+
+# Start the mouse listener thread
+mouse_listener_thread = threading.Thread(target=start_mouse_listener)
+mouse_listener_thread.daemon = True  # Make sure this thread exits when the main program exits
+mouse_listener_thread.start()
 
 # Example usage of record_window_stream, which records the video stream from the desired on-screen window and returns the frames and FPS
 for frame, fps in record_window_stream("RESIDENT EVIL 2"):
@@ -34,6 +61,14 @@ for frame, fps in record_window_stream("RESIDENT EVIL 2"):
     # Run YOLO on the frame tensor
     results = model.predict(frame_tensor, show=True)
 
+    # Check for left click and simulate pressing 'H'
+    if left_click_pressed:
+        print("Simulating 'H' key press")  # Debug message to confirm the 'H' key press
+        keyboard.press('h')
+        time.sleep(0.1)  # Introduce a small delay
+        keyboard.release('h')
+        left_click_pressed = False  # Reset the flag
+    
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
