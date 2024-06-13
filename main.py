@@ -33,13 +33,18 @@ keyboard = Controller()
 
 # Flag to check if left click is pressed
 left_click_pressed = False
+right_click_pressed = False
 
 # Mouse callback function for pynput
 def on_click(x, y, button, pressed):
     global left_click_pressed
     if button == button.left and pressed:
         left_click_pressed = True
-        print("Left click detected")  # Debug message to confirm the left click
+        print("Left click detected")  # Debug message to confirm the click
+    global right_click_pressed
+    if button == button.right and pressed:
+        right_click_pressed = True
+        print("Right click detected")    
 
 # Function to start the mouse listener in a separate thread
 def start_mouse_listener():
@@ -112,6 +117,9 @@ for frame, fps in record_window_stream("RESIDENT EVIL 2"):
             min_distance = distance
             min_distance_coords = (x1, y1)
         
+    if(right_click_pressed):
+        min_distance = 1000000
+        right_click_pressed = False    
 
     # Check for left click and simulate pressing 'H'
     if left_click_pressed:
