@@ -18,7 +18,7 @@ model.to(device)
 # Initialize the keyboard controller
 keyboard = Controller()
 
-# Flag to check if left click is pressedh
+# Flag to check if left click is pressed
 left_click_pressed = False
 
 # Mouse callback function for pynput
@@ -60,7 +60,29 @@ for frame, fps in record_window_stream("RESIDENT EVIL 2"):
     frame_tensor = frame_tensor.float() / 255.0  # Also normalize the values to [0, 1] range as YOLO expects this
 
     # Run YOLO on the frame tensor
-    results = model.predict(frame_tensor, show=True)#stream=True when not testing for better fps
+    results = model.predict(frame_tensor, classes=0, conf=0.35)
+
+    # Extract bounding boxes and iterate through them
+    boxes = results[0].boxes.xyxy.tolist()
+
+    for box in boxes:
+      
+        x1, y1, x2, y2 = map(int, box)
+        x1 = int(x1 * width / new_width)
+        y1 = int(y1 * height / new_height)
+        x2 = int(x2 * width / new_width)
+        y2 = int(y2 * height / new_height)
+
+        # Calculate center coordinates of the box
+        center_x = (x1 + x2) // 2
+        center_y = y1+y1*10//100  # Adjust the y-coordinate as needed
+        
+        radius = 10  # Adjust the radius of the circle as needed
+        color = (0, 255, 0)  # BGR color (green in this case)
+
+        # Draw a circle at the center of each detected box
+        cv2.circle(frame, (center_x, center_y), radius, color, -1)  # -1 to fill the circle
+        
 
     # Check for left click and simulate pressing 'H'
     if left_click_pressed:
@@ -70,6 +92,9 @@ for frame, fps in record_window_stream("RESIDENT EVIL 2"):
         keyboard.release('h')
         left_click_pressed = False  # Reset the flag
     
+    # Display the frame with circles drawn on it
+    cv2.imshow('Frame', frame)
+
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
