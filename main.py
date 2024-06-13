@@ -18,7 +18,7 @@ model.to(device)
 # Initialize the keyboard controller
 keyboard = Controller()
 
-# Flag to check if left click is pressed
+# Flag to check if left click is pressedh
 left_click_pressed = False
 
 # Mouse callback function for pynput
@@ -48,7 +48,7 @@ for frame, fps in record_window_stream("RESIDENT EVIL 2"):
     
     # Resize the frame to a smaller size that's still a multiple of 32, while maintaining the aspect ratio
     height, width, _ = frame_rgb.shape
-    new_height = 320
+    new_height = 640
     new_width = int(new_height * width / height)
     new_width = (new_width // 32) * 32  # Make sure the new width is a multiple of 32
     frame_rgb = cv2.resize(frame_rgb, (new_width, new_height))
@@ -60,7 +60,7 @@ for frame, fps in record_window_stream("RESIDENT EVIL 2"):
     frame_tensor = frame_tensor.float() / 255.0  # Also normalize the values to [0, 1] range as YOLO expects this
 
     # Run YOLO on the frame tensor
-    results = model.predict(frame_tensor, show=True)
+    results = model.predict(frame_tensor, show=True)#stream=True when not testing for better fps
 
     # Check for left click and simulate pressing 'H'
     if left_click_pressed:
