@@ -7,6 +7,13 @@ from pynput.mouse import Listener
 import threading
 import time
 
+
+def find_frame_center(frame):
+    height, width, _ = frame.shape
+    center_x = width // 2
+    center_y = height // 2
+    return center_x, center_y
+
 # Initialize YOLO model
 model = YOLO("yolov8n.pt")
 
@@ -93,7 +100,9 @@ for frame, fps in record_window_stream("RESIDENT EVIL 2"):
         left_click_pressed = False  # Reset the flag
     
     # Display the frame with circles drawn on it
+    cv2.circle(frame, find_frame_center(frame), 5, (255,0,0), -1)  # -1 to fill the circle
     cv2.imshow('Frame', frame)
+    print(find_frame_center(frame))
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
