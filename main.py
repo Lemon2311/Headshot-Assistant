@@ -12,6 +12,7 @@ model = YOLO("yolov8n.pt")
 
 # Check if CUDA is available and if so, use it
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+print(f"Using device: {device}")
 model.to(device)
 
 # Initialize the keyboard controller
