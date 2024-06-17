@@ -3,10 +3,15 @@ import cv2
 from ultralytics import YOLO
 from zest import record_window_stream
 from pynput.keyboard import Controller
-from pynput.mouse import Listener
+from pynput.mouse import Listener, Button
 import threading
 import time
 import math
+from pynput.mouse import Button, Controller as MouseController
+from pynput.keyboard import Controller as KeyboardController
+from screeninfo import get_monitors
+
+
 
 
 def find_frame_center(frame):
@@ -56,8 +61,6 @@ mouse_listener_thread = threading.Thread(target=start_mouse_listener)
 mouse_listener_thread.daemon = True  # Make sure this thread exits when the main program exits
 mouse_listener_thread.start()
 
-min_distance = 1000000
-
 # Example usage of record_window_stream, which records the video stream from the desired on-screen window and returns the frames and FPS
 for frame, fps in record_window_stream("RESIDENT EVIL 2"):
     # Process the frame and FPS as needed
@@ -86,8 +89,6 @@ for frame, fps in record_window_stream("RESIDENT EVIL 2"):
     boxes = results[0].boxes.xyxy.tolist()
 
     centers_list = []
-    
-    global min_distance_coords
 
     for box in boxes:
       
@@ -109,6 +110,8 @@ for frame, fps in record_window_stream("RESIDENT EVIL 2"):
 
         centers_list.append((center_x, center_y))
         
+    min_distance = 1000000
+
     for i in range(len(centers_list)-1):
         x1, y1 = centers_list[i]
         x2, y2 = find_frame_center(frame)
@@ -116,19 +119,47 @@ for frame, fps in record_window_stream("RESIDENT EVIL 2"):
         if(distance < min_distance):
             min_distance = distance
             min_distance_coords = (x1, y1)
-        
+            #update to keep track of al the distances to center and take the min then shooting
+
+# Get the size of the screen
+    screen_width = get_monitors()[0].width
+    screen_height = get_monitors()[0].height
+
     if(right_click_pressed):
-        min_distance = 1000000
         right_click_pressed = False    
 
-    # Check for left click and simulate pressing 'H'
+# Initialize the controllers
+    mouse_controller = MouseController()
+    keyboard_controller = KeyboardController()
+
+# Check for left click and simulate pressing 'H'
     if left_click_pressed:
+    # Press the right mouse button
+        mouse_controller.press(Button.right)
+
+        x, y = min_distance_coords
+    # Get the size of the image
+        image_width, image_height = frame.shape[1], frame.shape[0]
+
+    # Calculate the scaling factors
+        scale_x = screen_width / image_width
+        scale_y = screen_height / image_height
+
+    # Scale the coordinates
+        x *= scale_x
+        y *= scale_y
+
+    # Move the mouse
+        mouse_controller.position = (x, y)
+        time.sleep(0.3)       
+
         print("Simulating 'H' key press")  # Debug message to confirm the 'H' key press
-        keyboard.press('h')
+        keyboard_controller.press('h')
         time.sleep(0.1)  # Introduce a small delay
-        keyboard.release('h')
+        keyboard_controller.release('h')
+        mouse_controller.release(Button.right)
         left_click_pressed = False  # Reset the flag
-    
+
     # Display the frame with circles drawn on it
     cv2.circle(frame, find_frame_center(frame), 5, (255,0,0), -1)  # -1 to fill the circle
     cv2.imshow('Frame', frame)
