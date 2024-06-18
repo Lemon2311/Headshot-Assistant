@@ -34,3 +34,4 @@ def aim(coords, increment):
         ahk.mouse_move(x=increment * direction_x, y=increment * direction_y, blocking=True, speed=0, relative=True)
 
 aim((300, 300), 5)  # Example usage
+ds
