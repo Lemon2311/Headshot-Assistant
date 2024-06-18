@@ -147,7 +147,7 @@ for frame, fps in record_window_stream("RESIDENT EVIL 2"):
         
         aim((x, y), 5)
 
-        time.sleep(0.3)
+        time.sleep(0.3) # delay to allow the draw animation
         
         print("Simulating 'H' key press")
         keyboard_controller.press('h')
