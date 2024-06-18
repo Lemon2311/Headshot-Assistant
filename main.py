@@ -1,3 +1,4 @@
+from ahk import AHK
 import torch
 import cv2
 from ultralytics import YOLO
@@ -28,6 +29,9 @@ def calculate_distance(x1, y1, x2, y2):
 # Initialize YOLO model
 model = YOLO("yolov8n.pt")
 
+ahk = AHK()
+win = ahk.win_get(title='RESIDENT EVIL 2')
+
 # Check if CUDA is available and if so, use it
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print(f"Using device: {device}")
@@ -50,6 +54,28 @@ def on_click(x, y, button, pressed):
     if button == button.right and pressed:
         right_click_pressed = True
         print("Right click detected")    
+
+def aim(coords, increment):
+    threshold = 10
+
+    
+    # Get the current mouse position
+    mouse_position = ahk.get_mouse_position()
+
+    # Calculate the difference in coordinates
+    dx = coords[0] - mouse_position[0]
+    dy = coords[1] - mouse_position[1]
+
+    # Get a 1 or -1 based on the direction of the difference
+    direction_x = 1 if dx > 0 else -1
+    direction_y = 1 if dy > 0 else -1
+
+    # If the absolute difference is less than the threshold, break the loop
+    if abs(dx) < threshold and abs(dy) < threshold:
+        print(coords, mouse_position)
+
+        # Move the mouse in the calculated direction
+        ahk.mouse_move(x=increment * direction_x, y=increment * direction_y, blocking=True, speed=0, relative=True)
 
 # Function to start the mouse listener in a separate thread
 def start_mouse_listener():
@@ -146,19 +172,42 @@ for frame, fps in record_window_stream("RESIDENT EVIL 2"):
         scale_y = screen_height / image_height
 
     # Scale the coordinates
-        x *= scale_x
-        y *= scale_y
+        x *= 1
+        y *= 1
 
     # Move the mouse
-        mouse_controller.position = (x, y)
-        time.sleep(0.3)       
+        print('The current pointer position is', ahk.get_mouse_position())
+        print('Commanded pos', x, y)
+        
+        threshold = 10
+        increment = 5
 
-        print("Simulating 'H' key press")  # Debug message to confirm the 'H' key press
-        keyboard_controller.press('h')
-        time.sleep(0.1)  # Introduce a small delay
-        keyboard_controller.release('h')
-        mouse_controller.release(Button.right)
-        left_click_pressed = False  # Reset the flag
+        # Get the current mouse position
+        mouse_position = ahk.get_mouse_position()
+
+        # Calculate the difference in coordinates
+        dx = x - mouse_position[0]
+        dy = y - mouse_position[1]
+
+        # Get a 1 or -1 based on the direction of the difference
+        direction_x = 1 if dx > 0 else -1
+        direction_y = 1 if dy > 0 else -1
+
+        # If the absolute difference is less than the threshold, break the loop
+        if not abs(dx) < threshold and abs(dy) < threshold:
+            ahk.mouse_move(x=increment * direction_x, y=increment * direction_y, blocking=True, speed=0, relative=True)    
+        else:
+            time.sleep(0.3)  # Introduce a small delay
+            print("Simulating 'H' key press")  # Debug message to confirm the 'H' key press
+            keyboard_controller.press('h')
+            time.sleep(0.1)  # Introduce a small delay
+            keyboard_controller.release('h')
+            mouse_controller.release(Button.right)
+            left_click_pressed = False  # Reset the flag
+            print('The current pointer position is', ahk.get_mouse_position())
+            print('Commanded pos', x, y)
+
+        print(x,y, mouse_position)      
 
     # Display the frame with circles drawn on it
     cv2.circle(frame, find_frame_center(frame), 5, (255,0,0), -1)  # -1 to fill the circle
