@@ -27,14 +27,14 @@ def on_click(x, y, button, pressed):
     global left_click_pressed
     if button == button.left and pressed:
         left_click_pressed = True
+        animateing = True
         print("Left click detected")
     global right_click_pressed
     if button == button.right and pressed:
         right_click_pressed = True
         print("Right click detected")    
 
-def aim(coords, increment):
-    threshold = 10
+def aim(coords, increment, threshold):
     
     mouse_position = ahk.get_mouse_position()
 
@@ -47,7 +47,9 @@ def aim(coords, increment):
     if abs(dx) < threshold and abs(dy) < threshold:
         print(coords, mouse_position)
 
-        ahk.mouse_move(x=increment * direction_x, y=increment * direction_y, blocking=True, speed=10, relative=True)
+    ahk.mouse_move(x=increment * direction_x, y=increment * direction_y, blocking=True, speed=10, relative=True)
+
+    return dx, dy
 
 def start_mouse_listener():
     with Listener(on_click=on_click) as listener:
@@ -65,6 +67,7 @@ model.to(device)
 keyboard = Controller()
 
 left_click_pressed = False
+animateing = False
 right_click_pressed = False
 
 mouse_listener_thread = threading.Thread(target=start_mouse_listener)
@@ -131,32 +134,30 @@ for frame, fps in record_window_stream("RESIDENT EVIL 2"):
     keyboard_controller = KeyboardController()
 
     if left_click_pressed:
-        mouse_controller.press(Button.right)
+        mouse_controller.press(Button.right)        
+        if(animateing):
+            time.sleep(0.3) # delay to allow the draw animation
+            animateing = False
 
         x, y = min_distance_coords
-        image_width, image_height = frame.shape[1], frame.shape[0]
-
-        scale_x = screen_width / image_width
-        scale_y = screen_height / image_height
-
-        x *= 1
-        y *= 1
 
         print('The current pointer position is', ahk.get_mouse_position())
         print('Commanded pos', x, y)
         
-        aim((x, y), 5)
+        threshold = 10
 
-        time.sleep(0.3) # delay to allow the draw animation
+        dx, dy = aim((x, y), 5, threshold)
         
-        print("Simulating 'H' key press")
-        keyboard_controller.press('h')
-        time.sleep(0.1)
-        keyboard_controller.release('h')
-        mouse_controller.release(Button.right)
-        left_click_pressed = False
-        print('The current pointer position is', ahk.get_mouse_position())
-        print('Commanded pos', x, y)        
+        if abs(dx) < threshold and abs(dy) < threshold:
+            print(min_distance_coords, ahk.get_mouse_position())
+            print("Simulating 'H' key press")
+            keyboard_controller.press('h')
+            time.sleep(0.1)
+            keyboard_controller.release('h')
+            mouse_controller.release(Button.right)
+            left_click_pressed = False
+            print('The current pointer position is', ahk.get_mouse_position())
+            print('Commanded pos', x, y)        
 
     cv2.circle(frame, find_frame_center(frame), 5, (255,0,0), -1)  # -1 to fill the circle
     cv2.imshow('Frame', frame)
