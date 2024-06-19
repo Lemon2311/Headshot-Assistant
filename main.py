@@ -11,6 +11,8 @@ import math
 from pynput.mouse import Button, Controller as MouseController
 from pynput.keyboard import Controller as KeyboardController
 from screeninfo import get_monitors
+import sys
+import keyboard as key
 
 def find_frame_center(frame):
     height, width, _ = frame.shape
@@ -25,6 +27,7 @@ def calculate_distance(x1, y1, x2, y2):
 
 def on_click(x, y, button, pressed):
     global left_click_pressed
+    global animateing
     if button == button.left and pressed:
         left_click_pressed = True
         animateing = True
@@ -40,14 +43,19 @@ def aim(coords, increment, threshold):
 
     dx = coords[0] - mouse_position[0]
     dy = coords[1] - mouse_position[1]
+    
+    print('coords:', coords[0], coords[1])
+    print('dx:', dx, 'dy:', dy)
 
     direction_x = 1 if dx > 0 else -1
     direction_y = 1 if dy > 0 else -1
+    
+    print('direction_x:', direction_x, 'direction_y:', direction_y)
 
     if abs(dx) < threshold and abs(dy) < threshold:
         print(coords, mouse_position)
 
-    ahk.mouse_move(x=increment * direction_x, y=increment * direction_y, blocking=True, speed=10, relative=True)
+    ahk.mouse_move(x=increment * direction_x, y=increment * direction_y, blocking=True, speed=0, relative=True)
 
     return dx, dy
 
@@ -76,6 +84,9 @@ mouse_listener_thread.start()
 
 for frame, fps in record_window_stream("RESIDENT EVIL 2"):
     
+    if key.is_pressed('k'):
+        sys.exit()
+
     print(f"FPS: {fps:.2f}", end='\r')
 
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -124,9 +135,6 @@ for frame, fps in record_window_stream("RESIDENT EVIL 2"):
             min_distance = distance
             min_distance_coords = (x1, y1)
 
-    screen_width = get_monitors()[0].width
-    screen_height = get_monitors()[0].height
-
     if(right_click_pressed):
         right_click_pressed = False    
 
@@ -144,10 +152,29 @@ for frame, fps in record_window_stream("RESIDENT EVIL 2"):
         print('The current pointer position is', ahk.get_mouse_position())
         print('Commanded pos', x, y)
         
-        threshold = 10
-
-        dx, dy = aim((x, y), 5, threshold)
+        threshold = 39
+        increment = 26
         
+        mouse_position = ahk.get_mouse_position()
+
+        screen_centerX, screenCenterY = find_frame_center(frame)
+
+        dx = x - screen_centerX
+        dy = y - screenCenterY
+
+        if(dx > threshold):
+            x1 = -increment
+        else:
+            x1 = increment
+        
+        if(dy < threshold):
+            y1 = -increment            
+        else:
+            y1 = increment
+
+        ahk.mouse_move(x=x1, y=y1, blocking=True, speed=2, relative=True)
+        print(x,y,"to",screen_centerX,screenCenterY)
+
         if abs(dx) < threshold and abs(dy) < threshold:
             print(min_distance_coords, ahk.get_mouse_position())
             print("Simulating 'H' key press")
@@ -157,7 +184,7 @@ for frame, fps in record_window_stream("RESIDENT EVIL 2"):
             mouse_controller.release(Button.right)
             left_click_pressed = False
             print('The current pointer position is', ahk.get_mouse_position())
-            print('Commanded pos', x, y)        
+            print('Commanded pos', x, y)       
 
     cv2.circle(frame, find_frame_center(frame), 5, (255,0,0), -1)  # -1 to fill the circle
     cv2.imshow('Frame', frame)
