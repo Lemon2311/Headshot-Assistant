@@ -13,6 +13,7 @@ from pynput.keyboard import Controller as KeyboardController
 from screeninfo import get_monitors
 import sys
 import keyboard as key
+import win32api, win32con
 
 def find_frame_center(frame):
     height, width, _ = frame.shape
@@ -163,16 +164,17 @@ for frame, fps in record_window_stream("RESIDENT EVIL 2"):
         dy = y - screenCenterY
 
         if(dx > threshold):
-            x1 = -increment
+            x1 = -1
         else:
-            x1 = increment
+            x1 = 1
         
         if(dy < threshold):
-            y1 = -increment            
+            y1 = -1            
         else:
-            y1 = increment
+            y1 = 1
 
-        ahk.mouse_move(x=x1, y=y1, blocking=True, speed=2, relative=True)
+        win32api.mouse_event(win32con.MOUSEEVENTF_MOVE, int(x1*10), int(y1*10), 0, 0)
+
         print(x,y,"to",screen_centerX,screenCenterY)
 
         if abs(dx) < threshold and abs(dy) < threshold:
